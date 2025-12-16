@@ -1,5 +1,5 @@
 '''Real time stock predictor using XGBoost'''
-#A basic desicion model that says the probability of the price of a particular stock going up or down using random forest regression
+#A basic desicion model that says the probability of the price of a particular stock going up or down using XGBoost
 import pandas as pd
 import yfinance as yf
 import matplotlib.pyplot as plt
@@ -54,13 +54,13 @@ def prepare_data(df):
 
     #print(df[['Close','Tomorrow_Close','Target']].tail())
 
-    # 1. Define our predictors (features) and our target
+    # 1. Define predictors (features) and target
     predictors = ['SMA_50', 'SMA_20', 'Daily_Return','Volatility','RSI']
     target = 'Target'
 
     #Training 
     # 2. Split the data based on time
-    # Let's use everything before 2024 for training, and everything starting from 2024 for testing.
+    # use everything before 2024 for training, and everything starting from 2024 for testing.
     train = df[df.index < '2024-01-01']
     test = df[df.index >= '2024-01-01']
 
@@ -73,7 +73,7 @@ def prepare_data(df):
 
 def train_and_predict(X_train, y_train, X_test):
     # n_estimators: Number of boosting rounds (trees)
-    # learning_rate: How much each tree contributes (lower is slower but often more accurate)
+    # learning_rate: How much each tree contributes
     model = XGBClassifier(n_estimators=100, learning_rate=0.1, random_state=1)
     model.fit(X_train,y_train)
     # Instead of just a 0 or 1, get the probability (confidence) of it being a 1
@@ -97,10 +97,10 @@ def evaluate_and_plot(df, X_test, y_test, custom_preds, model, ticker_name):
     test_with_preds['Prediction'] = custom_preds
 
     # 2. Calculate the return for the NEXT day
-    # We use .shift(-1) to bring tomorrow's return into today's row, just like we did for the Target
+    # .shift(-1) to bring tomorrow's return into today's row
     test_with_preds['Next_Day_Return'] = df['Daily_Return'].shift(-1)
     test_with_preds['Strategy_Return'] = test_with_preds['Next_Day_Return'] * test_with_preds['Prediction']
-    # Calculate the cumulative returns for both the stock itself (Buy & Hold) and your strategy
+    # Calculate the cumulative returns for both the stock itself (Buy & Hold) and strategy
     test_with_preds['Buy_and_Hold'] = (1 + test_with_preds['Daily_Return']).cumprod()
     test_with_preds['Strategy_Equity'] = (1 + test_with_preds['Strategy_Return']).cumprod()
 
@@ -133,5 +133,6 @@ df=add_technical_features(df)
 X_train,y_train,X_test,y_test=prepare_data(df)
     
 model,probs,custom_preds=train_and_predict(X_train, y_train, X_test)
+
 
 evaluate_and_plot(df, X_test, y_test, custom_preds, model,c)
