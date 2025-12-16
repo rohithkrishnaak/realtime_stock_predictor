@@ -13,7 +13,6 @@ model = RandomForestClassifier(n_estimators=100, min_samples_split=100, random_s
 def choose(s):
     global df
     df=yf.download(tickers=s,period='5y')
-    # If the data has double headers (Ticker and Price), this flattens it to just Price
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
@@ -59,13 +58,13 @@ df['Target']=(df['Tomorrow_Close']>df['Close']).astype(int)
 
 #print(df[['Close','Tomorrow_Close','Target']].tail())
 
-# 1. Define our predictors (features) and our target
+# 1. Define the predictors (features) and target
 predictors = ['SMA_50', 'SMA_20', 'Daily_Return','Volatility','RSI']
 target = 'Target'
 
 #Training 
 # 2. Split the data based on time
-# Let's use everything before 2024 for training, and everything starting from 2024 for testing.
+# using everything before 2024 for training, and everything starting from 2024 for testing.
 train = df[df.index < '2024-01-01']
 test = df[df.index >= '2024-01-01']
 
@@ -78,13 +77,13 @@ y_test = test[target]
 model.fit(X_train,y_train)
 
 
-# Instead of just a 0 or 1, get the probability (confidence) of it being a 1
+
 # .predict_proba gives back two numbers: [Probability of 0, Probability of 1]
-# We only want the second number (Probability of 1), so we use [:, 1]
+# Im only considering the second number (Probability of 1), so we use [:, 1]
 probs = model.predict_proba(X_test)[:, 1]
 
-# Now, let's create a new custom prediction based on a higher threshold (e.g., 60%)
-# This says: "If probability is greater than 0.6, predict 1, otherwise 0"
+# custom prediction based on a higher threshold (e.g., 60%)
+# TIf probability is greater than 0.6, predict 1, otherwise 0
 custom_preds = (probs > 0.6).astype(int)
 
 new_score = precision_score(y_test, custom_preds)
@@ -116,10 +115,10 @@ test_with_preds = X_test.copy()
 test_with_preds['Prediction'] = custom_preds
 
 # 2. Calculate the return for the NEXT day
-# We use .shift(-1) to bring tomorrow's return into today's row, just like we did for the Target
+#.shift(-1) to bring tomorrow's return into today's row
 test_with_preds['Next_Day_Return'] = df['Daily_Return'].shift(-1)
 test_with_preds['Strategy_Return'] = test_with_preds['Next_Day_Return'] * test_with_preds['Prediction']
-# Calculate the cumulative returns for both the stock itself (Buy & Hold) and your strategy
+# Calculate the cumulative returns for both the stock itself (Buy & Hold) and strategy
 test_with_preds['Buy_and_Hold'] = (1 + test_with_preds['Daily_Return']).cumprod()
 test_with_preds['Strategy_Equity'] = (1 + test_with_preds['Strategy_Return']).cumprod()
 
@@ -129,4 +128,5 @@ plt.plot(test_with_preds['Buy_and_Hold'], label=f'Buy and Hold ({c})', color='gr
 plt.plot(test_with_preds['Strategy_Equity'], label='Your Strategy', color='green', linewidth=2)
 plt.title('Strategy Performance vs Buy & Hold (2024-2025)')
 plt.legend()
+
 plt.show()
