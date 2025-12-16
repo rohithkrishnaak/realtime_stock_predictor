@@ -73,6 +73,3 @@ It also generates a performance plot:
 
 Contributions are welcome! If you want to improve the feature engineering or try Deep Learning models (LSTM/GRU), feel free to fork the repo and submit a pull request.
 
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
